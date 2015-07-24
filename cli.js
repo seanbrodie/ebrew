@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
+var path = require('path')
 var ebrew = require('./index')
 
 if (process.argv[2] === 'init') {
   var prompt = require('cli-prompt')
-  var path = require('path')
   var fs = require('fs')
 
   var cwd = process.cwd()
@@ -77,6 +77,7 @@ if (process.argv[2] === 'init') {
   return
 }
 
-ebrew.generate(process.argv[3] || 'book.json', process.argv[2], function(err) {
+ebrew.generate(process.argv[3] || 'book.json', process.argv[2], function(err, result) {
   if (err) console.error(err.stack || err)
+  else console.log('Generated '+path.relative(process.cwd(), result.output))
 })
