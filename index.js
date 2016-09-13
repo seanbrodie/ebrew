@@ -68,8 +68,8 @@ exports.processManifest = function(manifest, root, cb) {
   var language = manifest.language || 'en'
   var contents = strarray(manifest.contents, 'Manifest key "contents" must be a filename or an array of filenames.')
   var authors = strarray(manifest.authors || manifest.author, 'Manifest key "author" or "authors" must be a string or an array of strings', true) || null
-  var publisher = manifest.publisher || null
-  var tocDepth = manifest.tocDepth || 6;
+  var publisher = manifest.publisher || ''
+  var tocDepth = manifest.tocDepth || 6
 
   var date = manifest.date ? new Date(manifest.date) : new Date
   var created = manifest.created ? new Date(manifest.created) : date
