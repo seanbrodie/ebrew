@@ -307,7 +307,7 @@ hr {
   border: 0;
   margin: 2em auto;
 }
-`), {name: 'OEBPS/style.css'})
+`, {name: 'OEBPS/style.css'})
 
   archive.finalize()
   process.nextTick(cb.bind(null, null, archive))
