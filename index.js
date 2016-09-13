@@ -38,8 +38,8 @@ exports.generate = function generate(input, output, cb) {
       }
 
       exports.createArchive({
-        manifest: manifest,
-        root: root,
+        manifest,
+        root,
         indent: '  ',
       }, function(err, archive) {
         if (err) return cb(err)
@@ -49,12 +49,7 @@ exports.generate = function generate(input, output, cb) {
 
           archive.pipe(fs.createWriteStream(output))
           archive.on('end', function() {
-            cb(null, {
-              input: input,
-              root: root,
-              manifest: manifest,
-              output: output,
-            })
+            cb(null, {input, root, manifest, output})
           })
         })
       })
@@ -103,7 +98,7 @@ exports.processManifest = function(manifest, root, cb) {
           stack.pop()
         }
         var head = {
-          title: title,
+          title,
           subheadings: [],
           chapter: i,
           level: n,
@@ -125,10 +120,7 @@ exports.processManifest = function(manifest, root, cb) {
           var ext = path.extname(this.attribs.src)
           var href = `resources/${resources.length}${ext}`
           this.attribs.src = `../${href}`
-          resources.push({
-            file: file,
-            href: href,
-          })
+          resources.push({file, href})
         }
       })
       return $.xml()
@@ -136,23 +128,12 @@ exports.processManifest = function(manifest, root, cb) {
 
     // console.log(require('util').inspect(headings, null, {depth: -1}))
 
+    var fullTitle = title + (subtitle ? ': ' + subtitle : '')
     cb(null, {
-      title: title,
-      subtitle: subtitle,
-      fullTitle: title + (subtitle ? ': ' + subtitle : ''),
-      language: language,
-      contents: contents,
-      texts: texts,
-      xhtmls: xhtmls,
-      resources: resources,
-      headings: headings,
-      authors: authors,
-      publisher: publisher,
-      date: date,
-      created: created,
-      copyrighted: copyrighted,
-      rights: rights,
-      tocDepth: tocDepth,
+      title, subtitle, fullTitle, language, tocDepth,
+      contents, texts, xhtmls, resources, headings,
+      authors, publisher, rights,
+      date, created, copyrighted,
       uuid: uuid.v4(),
     })
   })
@@ -183,7 +164,7 @@ exports.createArchive = function createArchive(options, cb) {
         }}},
       ]},
     ]
-  }, {declaration: true, indent: indent}), {name: 'META-INF/container.xml'})
+  }, {declaration: true, indent}), {name: 'META-INF/container.xml'})
 
   archive.append(xml({
     package: [
@@ -245,7 +226,7 @@ exports.createArchive = function createArchive(options, cb) {
         return {itemref: {_attr: {idref: 'text-'+i}}}
       }))},
     ]
-  }, {declaration: true, indent: indent}), {name: 'OEBPS/content.opf'})
+  }, {declaration: true, indent}), {name: 'OEBPS/content.opf'})
 
   archive.append(ncx([
     {head: [
@@ -266,7 +247,7 @@ exports.createArchive = function createArchive(options, cb) {
         {content: {_attr: {src: 'text/'+h.chapter+'.xhtml#'+h.id}}},
       ].concat(h.subheadings.map(np)))}
     })))},
-  ], {indent: indent}), {name: 'OEBPS/toc.ncx'})
+  ], {indent}), {name: 'OEBPS/toc.ncx'})
 
   archive.append(xhtml([
     {head: [
@@ -280,7 +261,7 @@ exports.createArchive = function createArchive(options, cb) {
         {p: [{_attr: {class: 'author'}}, formatList(manifest.authors)]},
       ] : [])},
     ]},
-  ], {indent: indent}), {name: 'OEBPS/text/_title.xhtml'})
+  ], {indent}), {name: 'OEBPS/text/_title.xhtml'})
 
   manifest.xhtmls.forEach(function(xhtml, i) {
     archive.append(
