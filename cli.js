@@ -1,9 +1,26 @@
 #!/usr/bin/env node
+'use strict'
 
 var path = require('path')
 var ebrew = require('./index')
+var cmd = process.argv[2]
 
-if (process.argv[2] === 'init') {
+if (cmd === 'help' || cmd === '--help' || cmd === '-h') {
+  console.log(`
+Usage: ebrew <command>
+
+ebrew init
+  Runs an interactive wizard for creating a new book.json manifest.
+
+ebrew [output = <title>.epub] [input = book.json]
+  Generates an EPUB file from the given manifest.
+
+See https://npm.im/ebrew for further documentation.
+`)
+  return
+}
+
+if (cmd === 'init') {
   var prompt = require('cli-prompt')
   var fs = require('fs')
 
