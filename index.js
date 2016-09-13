@@ -228,6 +228,7 @@ exports.createArchive = function createArchive(options, cb) {
     ]
   }, {declaration: true, indent}), {name: 'OEBPS/content.opf'})
 
+  var navPointId = 0
   archive.append(ncx([
     {head: [
       {meta: {_attr: {name: 'dtb:uid', content: manifest.uuid}}},
@@ -238,11 +239,13 @@ exports.createArchive = function createArchive(options, cb) {
     {docTitle: [{text: manifest.title}]},
     {navMap: Array.prototype.concat.apply([], [
       {navPoint: [
+        {_attr: {id: `item-${navPointId++}`}},
         {navLabel: [{text: manifest.title}]},
         {content: {_attr: {src: 'text/_title.xhtml'}}},
       ]},
     ].concat(manifest.headings.map(function np(h) {
       return h.level > manifest.tocDepth ? [] : h.empty ? h.subheadings.map(np) : {navPoint: Array.prototype.concat.apply([], [
+        {_attr: {id: `item-${navPointId++}`}},
         {navLabel: [{text: h.title}]},
         {content: {_attr: {src: 'text/'+h.chapter+'.xhtml#'+h.id}}},
       ].concat(h.subheadings.map(np)))}
