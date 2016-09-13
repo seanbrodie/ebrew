@@ -258,7 +258,8 @@ exports.createArchive = function createArchive(options, cb) {
       {link: {_attr: {rel: 'stylesheet', href: '../style.css'}}},
     ]},
     {body: [
-      {header: [
+      {div: [
+        {_attr: {class: 'header'}},
         {h1: manifest.title + (manifest.subtitle ? ':' : '')},
       ].concat(manifest.subtitle ? {h2: manifest.subtitle} : []).concat(manifest.authors.length ? [
         {p: [{_attr: {class: 'author'}}, formatList(manifest.authors)]},
@@ -284,21 +285,21 @@ exports.createArchive = function createArchive(options, cb) {
   })
 
   archive.append(`
-header, header h1, header h2 {
+.header, .header h1, .header h2 {
   text-align: center;
   hyphens: manual;
   -webkit-hyphens: manual;
   line-height: 1.15;
 }
-header h1 {
+.header h1 {
   font-size: 3em;
   margin: 1em 0 0;
 }
-header h2 {
+.header h2 {
   font-size: 2em;
   margin: 0.25em 0 0;
 }
-header .author {
+.header .author {
   margin: 4em 0 0;
   font-size: 1.5em;
   font-weight: bold;
