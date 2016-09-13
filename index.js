@@ -27,7 +27,7 @@ exports.generate = function generate(input, output, cb) {
   fs.readFile(input, {encoding: 'utf8'}, function(err, data) {
     if (err) return cb(err)
 
-    exports.processManifest(JSON.parse(data), root, function(err, manifest) {
+    exports.processManifest(JSON.parse(data), input, root, function(err, manifest) {
       if (err) return cb(err)
 
       if (output) {
@@ -57,7 +57,7 @@ exports.generate = function generate(input, output, cb) {
   })
 }
 
-exports.processManifest = function(manifest, root, cb) {
+exports.processManifest = function(manifest, input, root, cb) {
   var title = manifest.title || 'Untitled'
   var subtitle = manifest.subtitle || ''
   var language = manifest.language || 'en'
@@ -128,14 +128,21 @@ exports.processManifest = function(manifest, root, cb) {
 
     // console.log(require('util').inspect(headings, null, {depth: -1}))
 
-    var fullTitle = title + (subtitle ? ': ' + subtitle : '')
-    cb(null, {
-      title, subtitle, fullTitle, language, tocDepth,
-      contents, texts, xhtmls, resources, headings,
-      authors, publisher, rights,
-      date, created, copyrighted,
-      uuid: uuid.v4(),
-    })
+    if (!manifest.uuid) {
+      manifest.uuid = uuid.v4()
+      fs.writeFile(input, JSON.stringify(manifest, null, 2), done)
+    } else done()
+
+    function done() {
+      var fullTitle = title + (subtitle ? ': ' + subtitle : '')
+      cb(null, {
+        title, subtitle, fullTitle, language, tocDepth,
+        contents, texts, xhtmls, resources, headings,
+        authors, publisher, rights,
+        date, created, copyrighted,
+        uuid: manifest.uuid,
+      })
+    }
   })
 }
 
