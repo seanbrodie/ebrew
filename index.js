@@ -76,7 +76,7 @@ exports.processManifest = function(manifest, root, cb) {
   var copyrighted = manifest.copyrighted ? new Date(manifest.copyrighted) : date
 
   var rights = manifest.rights || (
-    authors ? 'Copyright ©'+copyrighted.getFullYear()+' '+formatList(authors) : null)
+    authors ? `Copyright ©${copyrighted.getFullYear()} ${formatList(authors)}` : null)
 
   async.map(contents, function(content, cb) {
     fs.readFile(path.resolve(root, content), {encoding: 'utf8'}, cb)
@@ -112,7 +112,7 @@ exports.processManifest = function(manifest, root, cb) {
         stack[stack.length - 1].push(head)
         stack.push(head.subheadings)
 
-        return '<h'+n+' id="'+head.id+'">'+title+'</h'+n+'>'
+        return `<h${n} id="${head.id}">${title}</h${n}>`
       })
     })
 
@@ -123,8 +123,8 @@ exports.processManifest = function(manifest, root, cb) {
         if (!/^\w+:/.test(this.attribs.src)) {
           var file = path.resolve(root, contents[i], '..', this.attribs.src)
           var ext = path.extname(this.attribs.src)
-          var href = 'resources/'+resources.length+ext
-          this.attribs.src = '../'+href
+          var href = `resources/${resources.length}${ext}`
+          this.attribs.src = `../${href}`
           resources.push({
             file: file,
             href: href,
@@ -284,48 +284,49 @@ exports.createArchive = function createArchive(options, cb) {
 
   manifest.xhtmls.forEach(function(xhtml, i) {
     archive.append(
-      XML_DECLARATION + XHTML_DOCTYPE+
-      '<html xmlns="http://www.w3.org/1999/xhtml">'+
-        '<head>'+
-          '<title>Chapter '+(i+1)+'</title>'+
-          '<link rel="stylesheet" href="../style.css" />'+
-        '</head>'+
-        '<body>'+xhtml+'</body>'+
-      '</html>', {name: 'OEBPS/text/'+i+'.xhtml'})
+`${XML_DECLARATION}${XHTML_DOCTYPE}
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Chapter ${i+1}</title>
+    <link rel="stylesheet" href="../style.css" />
+  </head>
+  <body>${xhtml}</body>
+</html>
+`, {name: `OEBPS/text/${i}.xhtml`})
   })
 
   manifest.resources.forEach(function(res) {
     archive.file(res.file, {name: 'OEBPS/'+res.href})
   })
 
-  archive.append(L([
-    'header, header h1, header h2 {',
-    '  text-align: center;',
-    '  hyphens: manual;',
-    '  -webkit-hyphens: manual;',
-    '  line-height: 1.15;',
-    '}',
-    'header h1 {',
-    '  font-size: 3em;',
-    '  margin: 1em 0 0;',
-    '}',
-    'header h2 {',
-    '  font-size: 2em;',
-    '  margin: 0.25em 0 0;',
-    '}',
-    'header .author {',
-    '  margin: 4em 0 0;',
-    '  font-size: 1.5em;',
-    '  font-weight: bold;',
-    '}',
-    'hr {',
-    '  width: 5em;',
-    '  height: 1px;',
-    '  background: currentColor;',
-    '  border: 0;',
-    '  margin: 2em auto;',
-    '}',
-  ]), {name: 'OEBPS/style.css'})
+  archive.append(`
+header, header h1, header h2 {
+  text-align: center;
+  hyphens: manual;
+  -webkit-hyphens: manual;
+  line-height: 1.15;
+}
+header h1 {
+  font-size: 3em;
+  margin: 1em 0 0;
+}
+header h2 {
+  font-size: 2em;
+  margin: 0.25em 0 0;
+}
+header .author {
+  margin: 4em 0 0;
+  font-size: 1.5em;
+  font-weight: bold;
+}
+hr {
+  width: 5em;
+  height: 1px;
+  background: currentColor;
+  border: 0;
+  margin: 2em auto;
+}
+`), {name: 'OEBPS/style.css'})
 
   archive.finalize()
   process.nextTick(cb.bind(null, null, archive))
@@ -374,8 +375,4 @@ function ncx(children, opts) {
       version: '2005-1',
     }}].concat(children)
   }, opts)
-}
-
-function L(lines) {
-  return lines.join('\n') + '\n'
 }
