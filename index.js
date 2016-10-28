@@ -292,11 +292,13 @@ exports.createArchive = function createArchive(options, cb) {
   })
 
   archive.append(`
-.header, .header h1, .header h2 {
-  text-align: center;
+.header, h1, h2, h3, h4, h5, h6 {
   hyphens: manual;
   -webkit-hyphens: manual;
   line-height: 1.15;
+}
+.header, .header h1, .header h2 {
+  text-align: center;
 }
 .header h1 {
   font-size: 3em;
