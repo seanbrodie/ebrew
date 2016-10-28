@@ -22,6 +22,7 @@ See https://npm.im/ebrew for further documentation.
 
 if (cmd === 'init') {
   var prompt = require('cli-prompt')
+  var uuid = require('uuid')
   var fs = require('fs')
 
   var cwd = process.cwd()
@@ -77,6 +78,7 @@ if (cmd === 'init') {
     if (!manifest.subtitle) delete manifest.subtitle
     var items = manifest.contents.split(/\s*,\s*/)
     if (items.length > 1) manifest.contents = items
+    manifest.uuid = uuid.v4()
 
     var file = path.join(cwd, 'book.json')
     var data = JSON.stringify(manifest, null, 2)
