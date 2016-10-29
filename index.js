@@ -1,17 +1,23 @@
 'use strict'
 
-var fs = require('fs')
-var path = require('path')
-var mkdirp = require('mkdirp')
-var archiver = require('archiver')
-var xml = require('xml')
-var slug = require('slug')
-var uuid = require('uuid')
-var marked = require('marked')
-var async = require('async')
-var marked = require('marked')
-var cheerio = require('cheerio')
-var mime = require('mime')
+const fs = require('fs')
+const path = require('path')
+const mkdirp = require('mkdirp')
+const archiver = require('archiver')
+const slug = require('slug')
+const uuid = require('uuid')
+const async = require('async')
+const marked = require('marked')
+const cheerio = require('cheerio')
+const mime = require('mime')
+const h = require('./h')
+
+const NS_XHTML = 'http://www.w3.org/1999/xhtml'
+const NS_EPUB = 'http://www.idpf.org/2007/ops'
+
+const XML_DECLARATION = '<?xml version="1.0" encoding="UTF-8"?>'
+const XHTML_DOCTYPE = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">'
+const NCX_DOCTYPE = '<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">'
 
 marked.setOptions({
   gfm: true,
@@ -20,9 +26,9 @@ marked.setOptions({
 })
 
 exports.generate = function generate(input, output, cb) {
-  var cwd = process.cwd()
+  const cwd = process.cwd()
   input = path.resolve(cwd, input)
-  var root = path.dirname(input)
+  const root = path.dirname(input)
 
   fs.readFile(input, {encoding: 'utf8'}, function(err, data) {
     if (err) return cb(err)
@@ -58,19 +64,19 @@ exports.generate = function generate(input, output, cb) {
 }
 
 exports.processManifest = function(manifest, input, root, cb) {
-  var title = manifest.title || 'Untitled'
-  var subtitle = manifest.subtitle || ''
-  var language = manifest.language || 'en'
-  var contents = strarray(manifest.contents, 'Manifest key "contents" must be a filename or an array of filenames.')
-  var authors = strarray(manifest.authors || manifest.author, 'Manifest key "author" or "authors" must be a string or an array of strings', true) || null
-  var publisher = manifest.publisher || ''
-  var tocDepth = manifest.tocDepth || 6
+  const title = manifest.title || 'Untitled'
+  const subtitle = manifest.subtitle || ''
+  const language = manifest.language || 'en'
+  const contents = strarray(manifest.contents, 'Manifest key "contents" must be a filename or an array of filenames.')
+  const authors = strarray(manifest.authors || manifest.author, 'Manifest key "author" or "authors" must be a string or an array of strings', true) || null
+  const publisher = manifest.publisher || ''
+  const tocDepth = manifest.tocDepth || 6
 
-  var date = manifest.date ? new Date(manifest.date) : new Date
-  var created = manifest.created ? new Date(manifest.created) : date
-  var copyrighted = manifest.copyrighted ? new Date(manifest.copyrighted) : date
+  const date = manifest.date ? new Date(manifest.date) : new Date
+  const created = manifest.created ? new Date(manifest.created) : date
+  const copyrighted = manifest.copyrighted ? new Date(manifest.copyrighted) : date
 
-  var rights = manifest.rights || (
+  const rights = manifest.rights || (
     authors ? `Copyright ©${copyrighted.getFullYear()} ${formatList(authors)}` : null)
 
   async.map(contents, function(content, cb) {
@@ -78,15 +84,15 @@ exports.processManifest = function(manifest, input, root, cb) {
   }, function(err, texts) {
     if (err) return cb(err)
 
-    var headings = []
-    var stack = [headings]
+    const headings = []
+    const stack = [headings]
 
     texts = texts.map(function(text, i) {
       return text.replace(/^(#{1,6}).+/gm, function(line, hashes) {
-        var n = hashes.length
-        var title = line.slice(n).trim()
+        const n = hashes.length
+        const title = line.slice(n).trim()
         while (n > stack.length) {
-          var anon = {
+          const anon = {
             empty: true,
             level: stack.length,
             subheadings: [],
@@ -97,7 +103,7 @@ exports.processManifest = function(manifest, input, root, cb) {
         while (n < stack.length) {
           stack.pop()
         }
-        var head = {
+        const head = {
           title,
           subheadings: [],
           chapter: i,
@@ -111,14 +117,14 @@ exports.processManifest = function(manifest, input, root, cb) {
       })
     })
 
-    var resources = []
-    var xhtmls = texts.map(function(text, i) {
-      var $ = cheerio.load(marked(text))
+    const resources = []
+    const xhtmls = texts.map(function(text, i) {
+      const $ = cheerio.load(marked(text))
       $('img').each(function() {
         if (!/^\w+:/.test(this.attribs.src)) {
-          var file = path.resolve(root, contents[i], '..', this.attribs.src)
-          var ext = path.extname(this.attribs.src)
-          var href = `resources/${resources.length}${ext}`
+          const file = path.resolve(root, contents[i], '..', this.attribs.src)
+          const ext = path.extname(this.attribs.src)
+          const href = `resources/${resources.length}${ext}`
           this.attribs.src = `../${href}`
           resources.push({file, href})
         }
@@ -126,15 +132,13 @@ exports.processManifest = function(manifest, input, root, cb) {
       return $.xml()
     })
 
-    // console.log(require('util').inspect(headings, null, {depth: -1}))
-
     if (!manifest.uuid) {
       manifest.uuid = uuid.v4()
       fs.writeFile(input, JSON.stringify(manifest, null, 2), done)
     } else done()
 
     function done() {
-      var fullTitle = title + (subtitle ? ': ' + subtitle : '')
+      const fullTitle = title + (subtitle ? ': ' + subtitle : '')
       cb(null, {
         title, subtitle, fullTitle, language, tocDepth,
         contents, texts, xhtmls, resources, headings,
@@ -147,168 +151,115 @@ exports.processManifest = function(manifest, input, root, cb) {
 }
 
 exports.createArchive = function createArchive(options, cb) {
-  var manifest = options.manifest
-  var root = options.root
-  var indent = options.indent
+  const manifest = options.manifest
+  const root = options.root
+  const indent = options.indent
 
-  var archive = archiver.create('zip')
+  const archive = archiver.create('zip')
 
-  archive.append('application/epub+zip', {
-    name: 'mimetype',
-    store: true,
-  })
+  archive.append('application/epub+zip', {name: 'mimetype', store: true})
 
-  archive.append(xml({
-    container: [
-      {_attr: {
-        version: '1.0',
-        xmlns: 'urn:oasis:names:tc:opendocument:xmlns:container',
-      }},
-      {rootfiles: [
-        {rootfile: {_attr: {
-          'full-path': 'OEBPS/content.opf',
-          'media-type': 'application/oebps-package+xml',
-        }}},
-      ]},
-    ]
-  }, {declaration: true, indent}), {name: 'META-INF/container.xml'})
+  archive.append(
+    xml('container', {version: '1.0', xmlns: 'urn:oasis:names:tc:opendocument:xmlns:container'},
+      h('rootfiles',
+        h('rootfile', {'full-path': 'OEBPS/content.opf', 'media-type': 'application/oebps-package+xml'}))),
+    {name: 'META-INF/container.xml'})
 
-  archive.append(xml({
-    package: [
-      {_attr: {
-        xmlns: 'http://www.idpf.org/2007/opf',
-        'unique-identifier': 'uuid',
-        version: '2.0',
-      }},
-      {metadata: [
-        {_attr: {
-          'xmlns:dc': 'http://purl.org/dc/elements/1.1/',
-          'xmlns:opf': 'http://www.idpf.org/2007/opf',
-        }},
-        {'dc:title': manifest.fullTitle},
-        {'dc:language': manifest.language},
-        {'dc:rights': manifest.rights},
-        {'dc:date': [{_attr: {'opf:event': 'creation'}}, formatDate(manifest.created)]},
-        {'dc:date': [{_attr: {'opf:event': 'copyright'}}, formatDate(manifest.copyrighted)]},
-        {'dc:date': [{_attr: {'opf:event': 'publication'}}, formatDate(manifest.date)]},
-        {'dc:publisher': manifest.publisher},
-        {'dc:type': 'Text'},
-        {'dc:identifier': [{_attr: {id: 'uuid', 'opf:scheme': 'UUID'}}, manifest.uuid]},
-      ].concat(manifest.authors.map(function(author) {
-        return {'dc:creator': [{_attr: {'opf:role': 'aut'}}, author]}
-      }))},
-      {manifest: [
-        {item: {_attr: {
-          id: 'toc',
-          'media-type': 'application/x-dtbncx+xml',
-          href: 'toc.ncx'
-        }}},
-        {item: {_attr: {
-          id: 'text-title',
-          'media-type': 'application/xhtml+xml',
-          href: 'text/_title.xhtml'
-        }}},
-        {item: {_attr: {
-          id: 'style',
-          'media-type': 'text/css',
-          href: 'style.css'
-        }}},
-      ].concat(manifest.texts.map(function(text, i) {
-        return {item: {_attr: {
-          id: 'text-'+i,
-          'media-type': 'application/xhtml+xml',
-          href: 'text/'+i+'.xhtml',
-        }}}
-      })).concat(manifest.resources.map(function(res, i) {
-        return {item: {_attr: {
-          id: 'res-'+i,
-          'media-type': mime.lookup(res.href),
-          href: res.href,
-        }}}
-      }))},
-      {spine: [
-        {_attr: {toc: 'toc'}},
-        {itemref: {_attr: {idref: 'text-title'}}},
-      ].concat(manifest.texts.map(function(text, i) {
-        return {itemref: {_attr: {idref: 'text-'+i}}}
-      }))},
-    ]
-  }, {declaration: true, indent}), {name: 'OEBPS/content.opf'})
+  archive.append(
+    xml('package', {xmlns: 'http://www.idpf.org/2007/opf', 'unique-identifier': 'uuid', version: '2.0'},
+      h('metadata', {'xmlns:dc': 'http://purl.org/dc/elements/1.1/', 'xmlns:opf': 'http://www.idpf.org/2007/opf'},
+        h('dc:title', manifest.fullTitle),
+        h('dc:language', manifest.language),
+        h('dc:rights', manifest.rights),
+        h('dc:date', {'opf:event': 'creation'}, formatDate(manifest.created)),
+        h('dc:date', {'opf:event': 'copyright'}, formatDate(manifest.copyrighted)),
+        h('dc:date', {'opf:event': 'publication'}, formatDate(manifest.date)),
+        h('dc:publisher', manifest.publisher),
+        h('dc:type', 'Text'),
+        h('dc:identifier', {id: 'uuid', 'opf:scheme': 'UUID'}, manifest.uuid),
+        manifest.authors.map(author =>
+          h('dc:creator', {'opf:role': 'aut'}, author))),
+      h('manifest',
+        h('item', {id: 'toc', 'media-type': 'application/x-dtbncx+xml', href: 'toc.ncx'}),
+        h('item', {id: 'text-title', 'media-type': 'application/xhtml+xml', href: 'text/_title.xhtml'}),
+        h('item', {id: 'style', 'media-type': 'text/css', href: 'style.css'}),
+        manifest.texts.map((text, i) =>
+          h('item', {id: `text-${i}`, 'media-type': 'application/xhtml+xml', href: `text/${i}.xhtml`})),
+        manifest.resources.map((res, i) =>
+          h('item', {id: `res-${i}`, 'media-type': mime.lookup(res.href), href: res.href}))),
+      h('spine', {toc: 'toc'},
+        h('itemref', {idref: 'text-title'}),
+        manifest.texts.map((text, i) =>
+          h('itemref', {idref: `text-${i}`})))),
+    {name: 'OEBPS/content.opf'})
 
-  var navPointId = 0
-  archive.append(ncx([
-    {head: [
-      {meta: {_attr: {name: 'dtb:uid', content: manifest.uuid}}},
-      {meta: {_attr: {name: 'dtb:depth', content: 6}}},
-      {meta: {_attr: {name: 'dtb:totalPageCount', content: 0}}},
-      {meta: {_attr: {name: 'dtb:maxPageNumber', content: 0}}},
-    ]},
-    {docTitle: [{text: manifest.title}]},
-    {navMap: Array.prototype.concat.apply([], [
-      {navPoint: [
-        {_attr: {id: `item-${navPointId++}`}},
-        {navLabel: [{text: manifest.title}]},
-        {content: {_attr: {src: 'text/_title.xhtml'}}},
-      ]},
-    ].concat(manifest.headings.map(function np(h) {
-      return h.level > manifest.tocDepth ? [] : h.empty ? h.subheadings.map(np) : {navPoint: Array.prototype.concat.apply([], [
-        {_attr: {id: `item-${navPointId++}`}},
-        {navLabel: [{text: h.title}]},
-        {content: {_attr: {src: 'text/'+h.chapter+'.xhtml#'+h.id}}},
-      ].concat(h.subheadings.map(np)))}
-    })))},
-  ], {indent}), {name: 'OEBPS/toc.ncx'})
+  let navPointId = 0
+  archive.append(
+    ncx(
+      h('head',
+        h('meta', {name: 'dtb:uid', content: manifest.uuid}),
+        h('meta', {name: 'dtb:depth', content: 6}),
+        h('meta', {name: 'dtb:totalPageCount', content: 0}),
+        h('meta', {name: 'dtb:maxPageNumber', content: 0})),
+      h('docTitle', h('text', manifest.title)),
+      h('navMap',
+        h('navPoint', {id: `item-${navPointId++}`},
+          h('navLabel', h('text', manifest.title)),
+          h('content', {src: 'text/_title.xhtml'})),
+        manifest.headings.map(function np(d) {
+          return d.level > manifest.tocDepth ? [] : d.empty ? d.subheadings.map(np) : h('navPoint', {id: `item-${navPointId++}`},
+            h('navLabel', h('text', d.title)),
+            h('content', {src: `text/${d.chapter}.xhtml#${d.id}`}),
+            d.subheadings.map(np))
+        }))),
+    {name: 'OEBPS/toc.ncx'})
 
-  archive.append(xhtml([
-    {head: [
-      {title: 'Title Page'},
-      {link: {_attr: {rel: 'stylesheet', href: '../style.css'}}},
-    ]},
-    {body: [
-      {div: [
-        {_attr: {class: 'header'}},
-        {h1: manifest.title + (manifest.subtitle ? ':' : '')},
-      ].concat(manifest.subtitle ? {h2: manifest.subtitle} : []).concat(manifest.authors.length ? [
-        {p: [{_attr: {class: 'author'}}, formatList(manifest.authors)]},
-      ] : [])},
-    ]},
-  ], {indent}), {name: 'OEBPS/text/_title.xhtml'})
+  archive.append(
+    xhtml({'xmlns:epub': NS_EPUB},
+      h('head',
+        h('title', 'Title Page'),
+        h('link', {rel: 'stylesheet', href: '../style.css'})),
+      h('body', {'epub:type': 'frontmatter'},
+        h('section', {class: 'titlepage', 'epub:type': 'titlepage'},
+          h('h1',
+            h('span', {'epub:type': 'title'}, manifest.title),
+            manifest.subtitle ? ':' : ''),
+          manifest.subtitle ? [h('h2', {'epub:type': 'subtitle'}, manifest.subtitle)] : [],
+          manifest.authors.length ? [h('p', {class: 'author'}, formatList(manifest.authors))] : []))),
+    {name: 'OEBPS/text/_title.xhtml'})
 
-  manifest.xhtmls.forEach(function(xhtml, i) {
+  manifest.xhtmls.forEach(function(content, i) {
     archive.append(
-`${XML_DECLARATION}${XHTML_DOCTYPE}
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <title>Chapter ${i+1}</title>
-    <link rel="stylesheet" href="../style.css" />
-  </head>
-  <body>${xhtml}</body>
-</html>
-`, {name: `OEBPS/text/${i}.xhtml`})
+      xhtml(
+        h('head',
+          h('title', `Chapter ${i+1}`),
+          h('link', {rel: 'stylesheet', href: '../style.css'})),
+        h('body', h.raw(content))),
+      {name: `OEBPS/text/${i}.xhtml`})
   })
 
   manifest.resources.forEach(function(res) {
-    archive.file(res.file, {name: 'OEBPS/'+res.href})
+    archive.file(res.file, {name: `OEBPS/${res.href}`})
   })
 
   archive.append(`
-.header, h1, h2, h3, h4, h5, h6 {
+.titlepage, h1, h2, h3, h4, h5, h6 {
   hyphens: manual;
   -webkit-hyphens: manual;
   line-height: 1.15;
 }
-.header, .header h1, .header h2 {
+.titlepage, .titlepage h1, .titlepage h2 {
   text-align: center;
 }
-.header h1 {
+.titlepage h1 {
   font-size: 3em;
   margin: 1em 0 0;
 }
-.header h2 {
+.titlepage h2 {
   font-size: 2em;
   margin: 0.25em 0 0;
 }
-.header .author {
+.titlepage .author {
   margin: 4em 0 0;
   font-size: 1.5em;
   font-weight: bold;
@@ -320,7 +271,7 @@ hr {
   border: 0;
   margin: 2em auto;
 }
-`, {name: 'OEBPS/style.css'})
+`.trim()+'\n', {name: 'OEBPS/style.css'})
 
   archive.finalize()
   process.nextTick(cb.bind(null, null, archive))
@@ -352,21 +303,12 @@ function pad0(n) {
   return n < 10 ? '0'+n : n
 }
 
-var XML_DECLARATION = '<?xml version="1.0" encoding="UTF-8"?>'
-var XHTML_DOCTYPE = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">'
-var NCX_DOCTYPE = '<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">'
-
-function xhtml(children, opts) {
-  return XML_DECLARATION + XHTML_DOCTYPE + xml({
-    html: [{_attr: {xmlns: 'http://www.w3.org/1999/xhtml'}}].concat(children)
-  }, opts)
+function xml(...a) {
+  return XML_DECLARATION + h(...a)
 }
-
-function ncx(children, opts) {
-  return XML_DECLARATION + NCX_DOCTYPE + xml({
-    ncx: [{_attr: {
-      xmlns: 'http://www.daisy.org/z3986/2005/ncx/',
-      version: '2005-1',
-    }}].concat(children)
-  }, opts)
+function xhtml(...a) {
+  return XML_DECLARATION + XHTML_DOCTYPE + h('html', {xmlns: NS_XHTML}, ...a)
+}
+function ncx(...a) {
+  return XML_DECLARATION + NCX_DOCTYPE + h('ncx', {xmlns: 'http://www.daisy.org/z3986/2005/ncx/', version: '2005-1'}, ...a)
 }
