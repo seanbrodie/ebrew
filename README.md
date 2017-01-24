@@ -79,6 +79,7 @@ Generates an EPUB file from the given manifest.
 | key | description |
 |----:|:------------|
 | `"contents"` | A filename or list of filenames corresponding to sections in the book. Required. |
+| `"css"` | A filename or list of filenames corresponding to stylesheets for the book. Default `[]`. |
 | `"title"` | The book's title. Default: `"Untitled"`. |
 | `"subtitle"` | The book's subtitle, usually displayed below or beside the title, separated from it by a colon. Default: `""`, i.e., no subtitle. |
 | `"language"` | An RFC 3066 language identifier indicating the primary language of the book's content. Default: `"en"`. |

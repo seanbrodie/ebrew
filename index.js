@@ -68,6 +68,7 @@ exports.processManifest = function(manifest, input, root, cb) {
   const subtitle = manifest.subtitle || ''
   const language = manifest.language || 'en'
   const contents = strarray(manifest.contents, 'Manifest key "contents" must be a filename or an array of filenames.')
+  const css = strarray(manifest.css, 'Manifest key "css" must be a string or array of strings', true)
   const authors = strarray(manifest.authors || manifest.author, 'Manifest key "author" or "authors" must be a string or an array of strings', true) || null
   const publisher = manifest.publisher || ''
   const tocDepth = manifest.tocDepth || 6
@@ -118,15 +119,19 @@ exports.processManifest = function(manifest, input, root, cb) {
     })
 
     const resources = []
+    function addResource(src, relative = []) {
+      const file = path.resolve(root, ...relative, src)
+      const ext = path.extname(file)
+      const href = `resources/${resources.length}${ext}`
+      resources.push({file, href})
+      return `../${href}`
+    }
+    const cssURLs = css.map(s => addResource(s))
     const xhtmls = texts.map(function(text, i) {
       const $ = cheerio.load(marked(text))
       $('img').each(function() {
         if (!/^\w+:/.test(this.attribs.src)) {
-          const file = path.resolve(root, contents[i], '..', this.attribs.src)
-          const ext = path.extname(this.attribs.src)
-          const href = `resources/${resources.length}${ext}`
-          this.attribs.src = `../${href}`
-          resources.push({file, href})
+          this.attribs.src = addResource(this.attribs.src, [contents[i], '..'])
         }
       })
       return $.xml()
@@ -142,6 +147,7 @@ exports.processManifest = function(manifest, input, root, cb) {
       cb(null, {
         title, subtitle, fullTitle, language, tocDepth,
         contents, texts, xhtmls, resources, headings,
+        css, cssURLs,
         authors, publisher, rights,
         date, created, copyrighted,
         uuid: manifest.uuid,
@@ -233,7 +239,8 @@ exports.createArchive = function createArchive(options, cb) {
       xhtml(
         h('head',
           h('title', `Chapter ${i+1}`),
-          h('link', {rel: 'stylesheet', href: '../style.css'})),
+          h('link', {rel: 'stylesheet', href: '../style.css'}),
+          manifest.cssURLs.map(href => h('link', {rel: 'stylesheet', href}))),
         h('body', h.raw(content))),
       {name: `OEBPS/text/${i}.xhtml`})
   })
