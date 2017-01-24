@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 'use strict'
 
-var path = require('path')
-var ebrew = require('./index')
-var cmd = process.argv[2]
+const path = require('path')
+const ebrew = require('./index')
+const cmd = process.argv[2]
 
 if (cmd === 'help' || cmd === '--help' || cmd === '-h') {
   console.log(`
@@ -21,12 +21,12 @@ See https://npm.im/ebrew for further documentation.
 }
 
 if (cmd === 'init') {
-  var prompt = require('cli-prompt')
-  var uuid = require('uuid')
-  var fs = require('fs')
+  const prompt = require('cli-prompt')
+  const uuid = require('uuid')
+  const fs = require('fs')
 
-  var cwd = process.cwd()
-  var title = path.basename(cwd)
+  const cwd = process.cwd()
+  const title = path.basename(cwd)
 
   console.log('This utility will walk you through creating a book.json manifest file.')
   console.log('It only covers the most common items, and tries to guess sensible defaults.')
@@ -45,9 +45,9 @@ if (cmd === 'init') {
     default: '',
   }, {
     key: 'date',
-    default: function(val) {
+    default() {
       if (this.author) {
-        var items = this.author.split(/\s*,\s*/)
+        const items = this.author.split(/\s*,\s*/)
         if (items.length > 1) {
           delete this.author
           this.authors = items
@@ -56,15 +56,15 @@ if (cmd === 'init') {
         delete this.author
       }
       return ebrew.formatDate(new Date)
-    }
+    },
   }, {
     key: 'publisher',
     default: '',
   }, {
     label: 'rights statement',
     key: 'rights',
-    default: function() {
-      var d = new Date(this.date)
+    default() {
+      const d = new Date(this.date)
       return 'Copyright ©'+d.getFullYear()+
         (this.author ? ' '+this.author :
           this.authors ? ' '+ebrew.formatList(this.authors) : '')
@@ -76,12 +76,12 @@ if (cmd === 'init') {
   }], function(manifest) {
     if (!manifest.publisher) delete manifest.publisher
     if (!manifest.subtitle) delete manifest.subtitle
-    var items = manifest.contents.split(/\s*,\s*/)
+    const items = manifest.contents.split(/\s*,\s*/)
     if (items.length > 1) manifest.contents = items
     manifest.uuid = uuid.v4()
 
-    var file = path.join(cwd, 'book.json')
-    var data = JSON.stringify(manifest, null, 2)
+    const file = path.join(cwd, 'book.json')
+    const data = JSON.stringify(manifest, null, 2)
 
     console.log('About to write to '+file+':')
     console.log()
