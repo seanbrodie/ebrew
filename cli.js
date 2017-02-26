@@ -31,11 +31,6 @@ const argv = yargs
       describe: 'Path to the book manifest. Pass - for standard input.',
       string: true,
     },
-    // dir: {
-    //   alias: 'd',
-    //   describe: 'Output a directory instead of a zip.',
-    //   boolean: true,
-    // },
   }, make)
 
   .epilogue('See https://npm.im/ebrew for further documentation.')
