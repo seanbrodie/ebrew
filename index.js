@@ -116,14 +116,14 @@ exports.loadBook = (manifest, root) => {
       const ext = path.extname(file)
       const href = `resources/${resources.length}${ext}`
       resources.push({file, href})
-      return `../${href}`
+      return href
     }
-    const cssURLs = manifest.css.map(s => addResource(s))
+    const cssURLs = manifest.css.map(s => '../' + addResource(s))
     const xhtmls = texts.map(function(text, i) {
       const $ = cheerio.load(marked(text))
       $('img').each(function() {
         if (!/^\w+:/.test(this.attribs.src)) {
-          this.attribs.src = addResource(this.attribs.src, [manifest.contents[i], '..'])
+          this.attribs.src = '../' + addResource(this.attribs.src, [manifest.contents[i], '..'])
         }
       })
       return $.xml()
