@@ -128,6 +128,7 @@ exports.loadBook = (manifest, root) => {
       })
       return $.xml()
     })
+    if (manifest.cover) manifest.coverURL = addResource(manifest.cover)
 
     return Object.assign({}, manifest, {texts, xhtmls, resources, headings, cssURLs})
   })
@@ -147,6 +148,7 @@ exports.createArchive = ({book, root, indent}) => {
   archive.append(
     xml('package', {xmlns: 'http://www.idpf.org/2007/opf', 'unique-identifier': 'uuid', version: '2.0'},
       h('metadata', {'xmlns:dc': 'http://purl.org/dc/elements/1.1/', 'xmlns:opf': 'http://www.idpf.org/2007/opf'},
+        book.coverURL ? h('meta', {name: 'cover', content: 'cover-image'}) : [],
         h('dc:title', book.sortTitle && book.sortTitle !== book.title ? {'opf:file-as': book.sortTitle} : {}, book.fullTitle),
         h('dc:language', book.language),
         h('dc:rights', book.rights),
@@ -161,6 +163,7 @@ exports.createArchive = ({book, root, indent}) => {
         book.authors.map(author =>
           h('dc:creator', {'opf:role': 'aut'}, author))),
       h('manifest',
+        book.coverURL ? h('item', {id: 'cover-image', properties: 'cover-image', 'media-type': mime.lookup(book.coverURL), href: book.coverURL}) : [],
         h('item', {id: 'toc', 'media-type': 'application/x-dtbncx+xml', href: 'toc.ncx'}),
         h('item', {id: 'text-title', 'media-type': 'application/xhtml+xml', href: 'text/_title.xhtml'}),
         h('item', {id: 'style', 'media-type': 'text/css', href: 'style.css'}),
