@@ -71,6 +71,8 @@ exports.normalizeManifest = m => {
   m.created = m.created ? new Date(m.created) : m.date
   m.copyrighted = m.copyrighted ? new Date(m.copyrighted) : m.date
   m.rights = m.rights || (m.authors ? `Copyright ©${m.copyrighted.getFullYear()} ${format.list(m.authors)}` : null)
+
+  delete m.author
   return m
 }
 
