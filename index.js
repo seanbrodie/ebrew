@@ -212,7 +212,13 @@ exports.createArchive = ({book, root, indent}) => {
             book.headings.map(function ol(d) {
               return d.level > book.tocDepth ? [] :
                 h('li', d.empty ? [] : h('a', {href: `${d.chapter}.xhtml#${d.id}`}, d.title), d.subheadings.length ? h('ol', d.subheadings.map(ol)) : [])
-            }))))),
+            }))),
+        h('nav', {'epub:type': 'landmarks', hidden: ''},
+          h('h1', 'Guide'),
+          h('ol',
+            h('li', h('a', {'epub:type': 'titlepage', href: '_title.xhtml'}, 'Title Page')),
+            h('li', h('a', {'epub:type': 'toc', href: '_nav.xhtml'}, 'Table of Contents')),
+            h('li', h('a', {'epub:type': 'bodymatter', href: '0.xhtml'}, 'Start of Content')))))),
     {name: 'book/text/_nav.xhtml'})
 
   archive.append(
