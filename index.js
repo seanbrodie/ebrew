@@ -176,7 +176,11 @@ exports.createArchive = ({book, root, indent}) => {
         h('itemref', {idref: 'text-title'}),
         book.toc === false ? [] : h('itemref', {idref: 'nav'}),
         book.texts.map((text, i) =>
-          h('itemref', {idref: `text-${i}`})))),
+          h('itemref', {idref: `text-${i}`}))),
+      h('guide',
+        h('reference', {type: 'title-page', title: 'Title Page', href: 'text/_title.xhtml'}),
+        h('reference', {type: 'toc', title: 'Table of Contents', href: 'text/_nav.xhtml'}),
+        h('reference', {type: 'text', title: 'Start of Content', href: 'text/0.xhtml'}))),
     {name: 'book/content.opf'})
 
   let navPointId = 0
