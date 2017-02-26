@@ -155,8 +155,8 @@ exports.createArchive = ({book, root, indent}) => {
         h('dc:publisher', book.publisher),
         h('dc:type', 'Text'),
         h('dc:identifier', {id: 'uuid', 'opf:scheme': 'uuid'}, book.uuid),
-        isbn ? h('dc:identifier', {'opf:scheme': 'isbn'}, book.isbn) : [],
-        doi ? h('dc:identifier', {'opf:scheme': 'doi'}, book.doi) : [],
+        book.isbn ? h('dc:identifier', {'opf:scheme': 'isbn'}, book.isbn) : [],
+        book.doi ? h('dc:identifier', {'opf:scheme': 'doi'}, book.doi) : [],
         book.authors.map(author =>
           h('dc:creator', {'opf:role': 'aut'}, author))),
       h('manifest',
