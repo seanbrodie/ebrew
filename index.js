@@ -7,7 +7,6 @@ const mkdirp = (dir, opts) => new Promise((r, j) => _mkdirp(dir, opts, e => e ? 
 const archiver = require('archiver')
 const slug = require('slug')
 const uuid = require('uuid')
-const async = require('async')
 const mime = require('mime')
 const getStdin = require('get-stdin')
 const h = require('./h')
