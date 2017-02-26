@@ -87,6 +87,7 @@ Generates an EPUB file from the given manifest.
 | `doi` | A DOI for the book. Optional. |
 | `contents` | A path or list of paths corresponding to sections in the book. Required. |
 | `cover` | The path to the cover image for the book. Optional. |
+| `coverPage` | Specify `false` to omit the generated cover page from the spine of the book. The cover image will still be present as metadata, but will not appear in the book content. Default: `true`. |
 | `css` | A path or list of paths to stylesheets for the book. Default `[]`. |
 | `title` | The book's title. Default: `"Untitled"`. |
 | `sortTitle` | The book's title. Default: generated from `title`. |
