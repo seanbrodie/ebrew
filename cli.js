@@ -2,101 +2,62 @@
 'use strict'
 
 const path = require('path')
-const ebrew = require('./index')
-const cmd = process.argv[2]
+const fs = require('mz/fs')
 
-if (cmd === 'help' || cmd === '--help' || cmd === '-h') {
-  console.log(`
-Usage: ebrew <command>
+const args = process.argv.slice(2)
+const yargs = require('yargs/yargs')(args)
 
-ebrew init
-  Runs an interactive wizard for creating a new book.json manifest.
+const pkg = require('./package.json')
 
-ebrew [output = <title>.epub] [input = book.json]
-  Generates an EPUB file from the given manifest.
+const argv = yargs
+  .usage('usage: $0 <command> [options]')
+  .version(pkg.version)
+  .alias('v', 'version')
+  .help()
+  .alias('h', 'help')
 
-See https://npm.im/ebrew for further documentation.
-`)
-  return
+  .command('init', 'Runs an interactive wizard for creating a new book.json manifest.', {}, init)
+
+  .command('make [output]', 'Generates an EPUB file from the given manifest.', {
+    output: {
+      alias: 'o',
+      string: true,
+      default: process.stdout.isTTY ? '' : '-',
+      describe: 'Path to the output file. Pass - for standard output.',
+    },
+    input: {
+      alias: 'i',
+      default: process.stdin.isTTY ? './book.json' : '-',
+      describe: 'Path to the book manifest. Pass - for standard input.',
+      string: true,
+    },
+    // dir: {
+    //   alias: 'd',
+    //   describe: 'Output a directory instead of a zip.',
+    //   boolean: true,
+    // },
+  }, make)
+
+  .epilogue('See https://npm.im/ebrew for further documentation.')
+  .argv
+
+const command = yargs.getCommandInstance()
+if (command.getCommands().length) {
+  args.unshift('make')
+  command.runCommand('make', yargs, yargs.parsed)
 }
 
-if (cmd === 'init') {
-  const prompt = require('cli-prompt')
-  const uuid = require('uuid')
-  const fs = require('fs')
-
-  const cwd = process.cwd()
-  const title = path.basename(cwd)
-
-  console.log('This utility will walk you through creating a book.json manifest file.')
-  console.log('It only covers the most common items, and tries to guess sensible defaults.')
-  console.log()
-  console.log('Press ^C at any time to quit.')
-
-  prompt.multi([{
-    key: 'title',
-    default: title,
-  }, {
-    key: 'subtitle',
-    default: '',
-  }, {
-    label: 'author(s)',
-    key: 'author',
-    default: '',
-  }, {
-    key: 'date',
-    default() {
-      if (this.author) {
-        const items = this.author.split(/\s*,\s*/)
-        if (items.length > 1) {
-          delete this.author
-          this.authors = items
-        }
-      } else {
-        delete this.author
-      }
-      return ebrew.formatDate(new Date)
-    },
-  }, {
-    key: 'publisher',
-    default: '',
-  }, {
-    label: 'rights statement',
-    key: 'rights',
-    default() {
-      const d = new Date(this.date)
-      return 'Copyright ©'+d.getFullYear()+
-        (this.author ? ' '+this.author :
-          this.authors ? ' '+ebrew.formatList(this.authors) : '')
-    },
-  }, {
-    label: 'section(s)',
-    key: 'contents',
-    default: 'book.md',
-  }], function(manifest) {
-    if (!manifest.publisher) delete manifest.publisher
-    if (!manifest.subtitle) delete manifest.subtitle
-    const items = manifest.contents.split(/\s*,\s*/)
-    if (items.length > 1) manifest.contents = items
-    manifest.uuid = uuid.v4()
-
-    const file = path.join(cwd, 'book.json')
-    const data = JSON.stringify(manifest, null, 2)
-
-    console.log('About to write to '+file+':')
-    console.log()
-    console.log(data)
-    console.log()
-    prompt('Is this ok? (yes) ', function(res) {
-      res = res.toLowerCase()
-      if (res && res !== 'y' && res !== 'yes' && res !== 'ok') return
-      fs.writeFile(file, data+'\n', {encoding: 'utf8'})
-    })
-  })
-  return
+function init(argv) {
+  require('./init')()
+  .catch(e => console.error(e.stack))
 }
 
-ebrew.generate(process.argv[3] || 'book.json', process.argv[2], function(err, result) {
-  if (err) console.error(err.stack || err)
-  else console.log('Generated '+path.relative(process.cwd(), result.output))
-})
+function make(argv) {
+  require('.').generate(argv.input, argv.output)
+  .then(output => {
+    if (output === '-') return
+    const relative = path.relative(process.cwd(), output)
+    const o = relative.startsWith('../') ? path.resolve(output) : relative
+    console.error(`Generated ${o}`)
+  }, e => console.error(e.stack))
+}

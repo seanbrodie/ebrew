@@ -1,8 +1,9 @@
 'use strict'
 
-const fs = require('fs')
+const fs = require('mz/fs')
 const path = require('path')
-const mkdirp = require('mkdirp')
+const _mkdirp = require('mkdirp')
+const mkdirp = (dir, opts) => new Promise((r, j) => _mkdirp(dir, opts, e => e ? j(e) : r()))
 const archiver = require('archiver')
 const slug = require('slug')
 const uuid = require('uuid')
@@ -10,6 +11,7 @@ const async = require('async')
 const marked = require('marked')
 const cheerio = require('cheerio')
 const mime = require('mime')
+const getStdin = require('get-stdin')
 const h = require('./h')
 
 const NS_XHTML = 'http://www.w3.org/1999/xhtml'
@@ -25,71 +27,61 @@ marked.setOptions({
   smartypants: true,
 })
 
-exports.generate = function generate(input, output, cb) {
-  const cwd = process.cwd()
-  input = path.resolve(cwd, input)
-  const root = path.dirname(input)
-
-  fs.readFile(input, {encoding: 'utf8'}, function(err, data) {
-    if (err) return cb(err)
-
-    exports.processManifest(JSON.parse(data), input, root, function(err, manifest) {
-      if (err) return cb(err)
-
-      if (output) {
-        output = path.resolve(cwd, output)
-        if (!/\.epub$/.test(output)) output += '.epub'
-      } else {
-        output = path.join(root, slug(manifest.title)+'.epub')
-      }
-
-      exports.createArchive({
-        manifest,
-        root,
-        indent: '  ',
-      }, function(err, archive) {
-        if (err) return cb(err)
-
-        mkdirp(path.dirname(output), function(err) {
-          if (err) return cb(err)
-
-          archive.pipe(fs.createWriteStream(output))
-          archive.on('end', function() {
-            cb(null, {input, root, manifest, output})
-          })
-        })
-      })
-    })
-  })
+exports.generate = (input, output) => {
+  const stdin = input === '-'
+  const root = stdin ? process.cwd() : path.dirname(input)
+  return (stdin ? getStdin() : fs.readFile(input, {encoding: 'utf8'}))
+  .then(JSON.parse)
+  .then(m => stdin ? m : exports.ensureUUID(m, input))
+  .then(exports.normalizeManifest)
+  .then(manifest =>
+    exports.loadBook(manifest, root).then(book => {
+      const stdout = output === '-'
+      output = output || exports.getOutputName(manifest)
+      return Promise.all([
+        stdout || mkdirp(path.dirname(output)),
+        exports.createArchive({book, root, indent: 2})
+      ]).then(([_, archive]) => new Promise((resolve, reject) => {
+        archive.pipe(stdout ? process.stdout : fs.createWriteStream(output))
+        archive.on('end', () => resolve(output))
+        archive.on('error', reject)
+      }))
+    }))
 }
 
-exports.processManifest = function(manifest, input, root, cb) {
-  const title = manifest.title || 'Untitled'
-  const subtitle = manifest.subtitle || ''
-  const language = manifest.language || 'en'
-  const contents = strarray(manifest.contents, 'Manifest key "contents" must be a filename or an array of filenames.')
-  const css = strarray(manifest.css, 'Manifest key "css" must be a string or array of strings', true)
-  const authors = strarray(manifest.authors || manifest.author, 'Manifest key "author" or "authors" must be a string or an array of strings', true) || null
-  const publisher = manifest.publisher || ''
-  const tocDepth = manifest.tocDepth || 6
+exports.getOutputName = m => slug(m.title)+'.epub'
 
-  const date = manifest.date ? new Date(manifest.date) : new Date
-  const created = manifest.created ? new Date(manifest.created) : date
-  const copyrighted = manifest.copyrighted ? new Date(manifest.copyrighted) : date
+exports.ensureUUID = (manifest, input, indent = 2) =>
+  manifest.uuid ? Promise.resolve(manifest) :
+  fs.writeFile(input, JSON.stringify(Object.assign(manifest, {uuid: uuid.v4()}), null, indent)).then(() => manifest)
 
-  const rights = manifest.rights || (
-    authors ? `Copyright ©${copyrighted.getFullYear()} ${formatList(authors)}` : null)
+exports.normalizeManifest = m => {
+  const title = m.title || 'Untitled'
+  const subtitle = m.subtitle || ''
+  const fullTitle = title + (subtitle ? ': ' + subtitle : '')
+  const language = m.language || 'en'
+  const contents = strarray(m.contents, 'm key "contents" must be a filename or an array of filenames.')
+  const css = strarray(m.css, 'm key "css" must be a string or array of strings', true)
+  const authors = strarray(m.authors || m.author, 'm key "author" or "authors" must be a string or an array of strings', true) || null
+  const publisher = m.publisher || ''
+  const tocDepth = m.tocDepth || 6
 
-  async.map(contents, function(content, cb) {
-    fs.readFile(path.resolve(root, content), {encoding: 'utf8'}, cb)
-  }, function(err, texts) {
-    if (err) return cb(err)
+  const date = m.date ? new Date(m.date) : new Date
+  const created = m.created ? new Date(m.created) : date
+  const copyrighted = m.copyrighted ? new Date(m.copyrighted) : date
+  const rights = m.rights || (authors ? `Copyright ©${copyrighted.getFullYear()} ${formatList(authors)}` : null)
 
+  return Object.assign(m, {title, subtitle, fullTitle, language, contents, css, authors, publisher, tocDepth, date, created, copyrighted, rights})
+}
+
+exports.loadBook = (manifest, root) => {
+  return Promise.all(manifest.contents.map(content => fs.readFile(path.resolve(root, content), {encoding: 'utf8'})))
+  .then(texts => {
     const headings = []
     const stack = [headings]
 
-    texts = texts.map(function(text, i) {
-      return text.replace(/^(#{1,6}).+/gm, function(line, hashes) {
+    texts = texts.map((text, i) =>
+      text.replace(/^(#{1,6}).+/gm, function(line, hashes) {
         const n = hashes.length
         const title = line.slice(n).trim()
         while (n > stack.length) {
@@ -101,9 +93,7 @@ exports.processManifest = function(manifest, input, root, cb) {
           stack[stack.length - 1].push(anon)
           stack.push(anon.subheadings)
         }
-        while (n < stack.length) {
-          stack.pop()
-        }
+        while (n < stack.length) stack.pop()
         const head = {
           title,
           subheadings: [],
@@ -115,8 +105,7 @@ exports.processManifest = function(manifest, input, root, cb) {
         stack.push(head.subheadings)
 
         return `<h${n} id="${head.id}">${title}</h${n}>`
-      })
-    })
+      }))
 
     const resources = []
     function addResource(src, relative = []) {
@@ -126,41 +115,22 @@ exports.processManifest = function(manifest, input, root, cb) {
       resources.push({file, href})
       return `../${href}`
     }
-    const cssURLs = css.map(s => addResource(s))
+    const cssURLs = manifest.css.map(s => addResource(s))
     const xhtmls = texts.map(function(text, i) {
       const $ = cheerio.load(marked(text))
       $('img').each(function() {
         if (!/^\w+:/.test(this.attribs.src)) {
-          this.attribs.src = addResource(this.attribs.src, [contents[i], '..'])
+          this.attribs.src = addResource(this.attribs.src, [manifest.contents[i], '..'])
         }
       })
       return $.xml()
     })
 
-    if (!manifest.uuid) {
-      manifest.uuid = uuid.v4()
-      fs.writeFile(input, JSON.stringify(manifest, null, 2), done)
-    } else done()
-
-    function done() {
-      const fullTitle = title + (subtitle ? ': ' + subtitle : '')
-      cb(null, {
-        title, subtitle, fullTitle, language, tocDepth,
-        contents, texts, xhtmls, resources, headings,
-        css, cssURLs,
-        authors, publisher, rights,
-        date, created, copyrighted,
-        uuid: manifest.uuid,
-      })
-    }
+    return Object.assign({}, manifest, {texts, xhtmls, resources, headings, cssURLs})
   })
 }
 
-exports.createArchive = function createArchive(options, cb) {
-  const manifest = options.manifest
-  const root = options.root
-  const indent = options.indent
-
+exports.createArchive = ({book, root, indent}) => {
   const archive = archiver.create('zip')
 
   archive.append('application/epub+zip', {name: 'mimetype', store: true})
@@ -174,28 +144,28 @@ exports.createArchive = function createArchive(options, cb) {
   archive.append(
     xml('package', {xmlns: 'http://www.idpf.org/2007/opf', 'unique-identifier': 'uuid', version: '2.0'},
       h('metadata', {'xmlns:dc': 'http://purl.org/dc/elements/1.1/', 'xmlns:opf': 'http://www.idpf.org/2007/opf'},
-        h('dc:title', manifest.fullTitle),
-        h('dc:language', manifest.language),
-        h('dc:rights', manifest.rights),
-        h('dc:date', {'opf:event': 'creation'}, formatDate(manifest.created)),
-        h('dc:date', {'opf:event': 'copyright'}, formatDate(manifest.copyrighted)),
-        h('dc:date', {'opf:event': 'publication'}, formatDate(manifest.date)),
-        h('dc:publisher', manifest.publisher),
+        h('dc:title', book.fullTitle),
+        h('dc:language', book.language),
+        h('dc:rights', book.rights),
+        h('dc:date', {'opf:event': 'creation'}, formatDate(book.created)),
+        h('dc:date', {'opf:event': 'copyright'}, formatDate(book.copyrighted)),
+        h('dc:date', {'opf:event': 'publication'}, formatDate(book.date)),
+        h('dc:publisher', book.publisher),
         h('dc:type', 'Text'),
-        h('dc:identifier', {id: 'uuid', 'opf:scheme': 'UUID'}, manifest.uuid),
-        manifest.authors.map(author =>
+        h('dc:identifier', {id: 'uuid', 'opf:scheme': 'UUID'}, book.uuid),
+        book.authors.map(author =>
           h('dc:creator', {'opf:role': 'aut'}, author))),
       h('manifest',
         h('item', {id: 'toc', 'media-type': 'application/x-dtbncx+xml', href: 'toc.ncx'}),
         h('item', {id: 'text-title', 'media-type': 'application/xhtml+xml', href: 'text/_title.xhtml'}),
         h('item', {id: 'style', 'media-type': 'text/css', href: 'style.css'}),
-        manifest.texts.map((text, i) =>
+        book.texts.map((text, i) =>
           h('item', {id: `text-${i}`, 'media-type': 'application/xhtml+xml', href: `text/${i}.xhtml`})),
-        manifest.resources.map((res, i) =>
+        book.resources.map((res, i) =>
           h('item', {id: `res-${i}`, 'media-type': mime.lookup(res.href), href: res.href}))),
       h('spine', {toc: 'toc'},
         h('itemref', {idref: 'text-title'}),
-        manifest.texts.map((text, i) =>
+        book.texts.map((text, i) =>
           h('itemref', {idref: `text-${i}`})))),
     {name: 'OEBPS/content.opf'})
 
@@ -203,17 +173,17 @@ exports.createArchive = function createArchive(options, cb) {
   archive.append(
     ncx(
       h('head',
-        h('meta', {name: 'dtb:uid', content: manifest.uuid}),
+        h('meta', {name: 'dtb:uid', content: book.uuid}),
         h('meta', {name: 'dtb:depth', content: 6}),
         h('meta', {name: 'dtb:totalPageCount', content: 0}),
         h('meta', {name: 'dtb:maxPageNumber', content: 0})),
-      h('docTitle', h('text', manifest.title)),
+      h('docTitle', h('text', book.title)),
       h('navMap',
         h('navPoint', {id: `item-${navPointId++}`},
-          h('navLabel', h('text', manifest.title)),
+          h('navLabel', h('text', book.title)),
           h('content', {src: 'text/_title.xhtml'})),
-        manifest.headings.map(function np(d) {
-          return d.level > manifest.tocDepth ? [] : d.empty ? d.subheadings.map(np) : h('navPoint', {id: `item-${navPointId++}`},
+        book.headings.map(function np(d) {
+          return d.level > book.tocDepth ? [] : d.empty ? d.subheadings.map(np) : h('navPoint', {id: `item-${navPointId++}`},
             h('navLabel', h('text', d.title)),
             h('content', {src: `text/${d.chapter}.xhtml#${d.id}`}),
             d.subheadings.map(np))
@@ -228,24 +198,24 @@ exports.createArchive = function createArchive(options, cb) {
       h('body', {'epub:type': 'frontmatter'},
         h('section', {class: 'titlepage', 'epub:type': 'titlepage'},
           h('h1',
-            h('span', {'epub:type': 'title'}, manifest.title),
-            manifest.subtitle ? ':' : ''),
-          manifest.subtitle ? [h('h2', {'epub:type': 'subtitle'}, manifest.subtitle)] : [],
-          manifest.authors.length ? [h('p', {class: 'author'}, formatList(manifest.authors))] : []))),
+            h('span', {'epub:type': 'title'}, book.title),
+            book.subtitle ? ':' : ''),
+          book.subtitle ? [h('h2', {'epub:type': 'subtitle'}, book.subtitle)] : [],
+          book.authors.length ? [h('p', {class: 'author'}, formatList(book.authors))] : []))),
     {name: 'OEBPS/text/_title.xhtml'})
 
-  manifest.xhtmls.forEach(function(content, i) {
+  book.xhtmls.forEach(function(content, i) {
     archive.append(
       xhtml(
         h('head',
           h('title', `Chapter ${i+1}`),
           h('link', {rel: 'stylesheet', href: '../style.css'}),
-          manifest.cssURLs.map(href => h('link', {rel: 'stylesheet', href}))),
+          book.cssURLs.map(href => h('link', {rel: 'stylesheet', href}))),
         h('body', h.raw(content))),
       {name: `OEBPS/text/${i}.xhtml`})
   })
 
-  manifest.resources.forEach(function(res) {
+  book.resources.forEach(function(res) {
     archive.file(res.file, {name: `OEBPS/${res.href}`})
   })
 
@@ -281,7 +251,7 @@ hr {
 `.trim()+'\n', {name: 'OEBPS/style.css'})
 
   archive.finalize()
-  process.nextTick(cb.bind(null, null, archive))
+  return Promise.resolve(archive)
 }
 
 function strarray(data, message, optional) {
