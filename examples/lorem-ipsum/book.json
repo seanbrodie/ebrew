@@ -1,10 +1,11 @@
 {
   "title": "Lorem Ipsum",
-  "author": "Nathan Dinsmore",
+  "author": "Nathan",
   "date": "2015-06-05",
   "rights": "Public Domain",
   "contents": [
     "book/lorem.md",
     "book/ipsum.md"
-  ]
+  ],
+  "uuid": "8408ba06-f617-4ddf-87d8-4515f3b70fb9"
 }
