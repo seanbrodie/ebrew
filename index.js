@@ -179,7 +179,7 @@ exports.createArchive = ({book, root, indent}) => {
           h('itemref', {idref: `text-${i}`}))),
       h('guide',
         h('reference', {type: 'title-page', title: 'Title Page', href: 'text/_title.xhtml'}),
-        h('reference', {type: 'toc', title: 'Table of Contents', href: 'text/_nav.xhtml'}),
+        book.toc === false ? [] : h('reference', {type: 'toc', title: 'Table of Contents', href: 'text/_nav.xhtml'}),
         h('reference', {type: 'text', title: 'Start of Content', href: 'text/0.xhtml'}))),
     {name: 'book/content.opf'})
 
@@ -221,7 +221,7 @@ exports.createArchive = ({book, root, indent}) => {
           h('h1', 'Guide'),
           h('ol',
             h('li', h('a', {'epub:type': 'titlepage', href: '_title.xhtml'}, 'Title Page')),
-            h('li', h('a', {'epub:type': 'toc', href: '_nav.xhtml'}, 'Table of Contents')),
+            book.toc === false ? [] : h('li', h('a', {'epub:type': 'toc', href: '_nav.xhtml'}, 'Table of Contents')),
             h('li', h('a', {'epub:type': 'bodymatter', href: '0.xhtml'}, 'Start of Content')))))),
     {name: 'book/text/_nav.xhtml'})
 
