@@ -141,7 +141,7 @@ exports.createArchive = ({book, root, indent}) => {
   archive.append(
     xml('container', {version: '1.0', xmlns: 'urn:oasis:names:tc:opendocument:xmlns:container'},
       h('rootfiles',
-        h('rootfile', {'full-path': 'OEBPS/content.opf', 'media-type': 'application/oebps-package+xml'}))),
+        h('rootfile', {'full-path': 'book/content.opf', 'media-type': 'application/oebps-package+xml'}))),
     {name: 'META-INF/container.xml'})
 
   archive.append(
@@ -172,7 +172,7 @@ exports.createArchive = ({book, root, indent}) => {
         h('itemref', {idref: 'text-title'}),
         book.texts.map((text, i) =>
           h('itemref', {idref: `text-${i}`})))),
-    {name: 'OEBPS/content.opf'})
+    {name: 'book/content.opf'})
 
   let navPointId = 0
   archive.append(
@@ -193,7 +193,7 @@ exports.createArchive = ({book, root, indent}) => {
             h('content', {src: `text/${d.chapter}.xhtml#${d.id}`}),
             d.subheadings.map(np))
         }))),
-    {name: 'OEBPS/toc.ncx'})
+    {name: 'book/toc.ncx'})
 
   archive.append(
     xhtml({'xmlns:epub': NS_EPUB},
@@ -207,7 +207,7 @@ exports.createArchive = ({book, root, indent}) => {
             book.subtitle ? ':' : ''),
           book.subtitle ? [h('h2', {'epub:type': 'subtitle'}, book.subtitle)] : [],
           book.authors.length ? [h('p', {class: 'author'}, format.list(book.authors))] : []))),
-    {name: 'OEBPS/text/_title.xhtml'})
+    {name: 'book/text/_title.xhtml'})
 
   book.xhtmls.forEach(function(content, i) {
     archive.append(
@@ -217,11 +217,11 @@ exports.createArchive = ({book, root, indent}) => {
           h('link', {rel: 'stylesheet', href: '../style.css'}),
           book.cssURLs.map(href => h('link', {rel: 'stylesheet', href}))),
         h('body', h.raw(content))),
-      {name: `OEBPS/text/${i}.xhtml`})
+      {name: `book/text/${i}.xhtml`})
   })
 
   book.resources.forEach(function(res) {
-    archive.file(res.file, {name: `OEBPS/${res.href}`})
+    archive.file(res.file, {name: `book/${res.href}`})
   })
 
   archive.append(`
@@ -253,7 +253,7 @@ hr {
   border: 0;
   margin: 2em auto;
 }
-`.trim()+'\n', {name: 'OEBPS/style.css'})
+`.trim()+'\n', {name: 'book/style.css'})
 
   archive.finalize()
   return Promise.resolve(archive)
