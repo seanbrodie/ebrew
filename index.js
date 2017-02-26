@@ -8,8 +8,6 @@ const archiver = require('archiver')
 const slug = require('slug')
 const uuid = require('uuid')
 const async = require('async')
-const marked = require('marked')
-const cheerio = require('cheerio')
 const mime = require('mime')
 const getStdin = require('get-stdin')
 const h = require('./h')
@@ -21,12 +19,6 @@ const NS_EPUB = 'http://www.idpf.org/2007/ops'
 const XML_DECLARATION = '<?xml version="1.0" encoding="UTF-8"?>'
 const XHTML_DOCTYPE = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">'
 const NCX_DOCTYPE = '<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">'
-
-marked.setOptions({
-  gfm: true,
-  sanitize: false,
-  smartypants: true,
-})
 
 exports.generate = (input, output) => {
   const stdin = input === '-'
@@ -56,83 +48,9 @@ exports.ensureUUID = (manifest, input, indent = 2) =>
   manifest.uuid ? Promise.resolve(manifest) :
   fs.writeFile(input, JSON.stringify(Object.assign(manifest, {uuid: uuid.v4()}), null, indent)).then(() => manifest)
 
-exports.normalizeManifest = m => {
-  m.title = m.title || 'Untitled'
-  m.sortTitle = m.sortTitle || format.sortTitle(m.title)
-  m.subtitle = m.subtitle || ''
-  m.fullTitle = m.title + (m.subtitle ? ': ' + m.subtitle : '')
-  m.language = m.language || 'en'
-  m.contents = strarray(m.contents, 'm key "contents" must be a filename or an array of filenames.')
-  m.css = strarray(m.css, 'm key "css" must be a string or array of strings', true)
-  m.authors = strarray(m.authors || m.author, 'm key "author" or "authors" must be a string or an array of strings', true) || null
-  m.publisher = m.publisher || ''
-  m.tocDepth = m.tocDepth || 6
+exports.normalizeManifest = require('./normalize')
 
-  m.date = m.date ? new Date(m.date) : new Date
-  m.created = m.created ? new Date(m.created) : m.date
-  m.copyrighted = m.copyrighted ? new Date(m.copyrighted) : m.date
-  m.rights = m.rights || (m.authors ? `Copyright ©${m.copyrighted.getFullYear()} ${format.list(m.authors)}` : null)
-
-  delete m.author
-  return m
-}
-
-exports.loadBook = (manifest, root) => {
-  return Promise.all(manifest.contents.map(content => fs.readFile(path.resolve(root, content), {encoding: 'utf8'})))
-  .then(texts => {
-    const headings = []
-    const stack = [headings]
-
-    texts = texts.map((text, i) =>
-      text.replace(/^(#{1,6}).+/gm, function(line, hashes) {
-        const n = hashes.length
-        const title = line.slice(n).trim()
-        while (n > stack.length) {
-          const anon = {
-            empty: true,
-            level: stack.length,
-            subheadings: [],
-          }
-          stack[stack.length - 1].push(anon)
-          stack.push(anon.subheadings)
-        }
-        while (n < stack.length) stack.pop()
-        const head = {
-          title,
-          subheadings: [],
-          chapter: i,
-          level: n,
-          id: slug(title),
-        }
-        stack[stack.length - 1].push(head)
-        stack.push(head.subheadings)
-
-        return `<h${n} id="${head.id}">${title}</h${n}>`
-      }))
-
-    const resources = []
-    function addResource(src, relative = []) {
-      const file = path.resolve(root, ...relative, src)
-      const ext = path.extname(file)
-      const href = `resources/${resources.length}${ext}`
-      resources.push({file, href})
-      return href
-    }
-    const cssURLs = manifest.css.map(s => '../' + addResource(s))
-    const xhtmls = texts.map(function(text, i) {
-      const $ = cheerio.load(marked(text))
-      $('img').each(function() {
-        if (!/^\w+:/.test(this.attribs.src)) {
-          this.attribs.src = '../' + addResource(this.attribs.src, [manifest.contents[i], '..'])
-        }
-      })
-      return $.xml()
-    })
-    if (manifest.cover) manifest.coverURL = addResource(manifest.cover)
-
-    return Object.assign({}, manifest, {texts, xhtmls, resources, headings, cssURLs})
-  })
-}
+exports.loadBook = require('./load')
 
 exports.createArchive = ({book, root, indent}) => {
   const archive = archiver.create('zip')
@@ -287,13 +205,6 @@ hr {
 
   archive.finalize()
   return Promise.resolve(archive)
-}
-
-function strarray(data, message, optional) {
-  if (optional && !data) return []
-  if (typeof data === 'string') data = [data]
-  if (!Array.isArray(data)) throw new Error(message)
-  return data
 }
 
 function xml(...a) {
