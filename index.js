@@ -165,6 +165,7 @@ exports.createArchive = ({book, root, indent}) => {
       h('manifest',
         book.coverURL ? h('item', {id: 'cover-image', properties: 'cover-image', 'media-type': mime.lookup(book.coverURL), href: book.coverURL}) : [],
         h('item', {id: 'toc', 'media-type': 'application/x-dtbncx+xml', href: 'toc.ncx'}),
+        h('item', {id: 'nav', properties: 'nav', 'media-type': 'application/xhtml+xml', href: 'text/_nav.xhtml'}),
         h('item', {id: 'text-title', 'media-type': 'application/xhtml+xml', href: 'text/_title.xhtml'}),
         h('item', {id: 'style', 'media-type': 'text/css', href: 'style.css'}),
         book.texts.map((text, i) =>
@@ -197,6 +198,21 @@ exports.createArchive = ({book, root, indent}) => {
             d.subheadings.map(np))
         }))),
     {name: 'book/toc.ncx'})
+
+  archive.append(
+    xhtml({'xmlns:epub': NS_EPUB},
+      h('head',
+        h('title', 'Table of Contents'),
+        h('link', {rel: 'stylesheet', href: '../style.css'})),
+      h('body', {'epub:type': 'frontmatter'},
+        h('nav', {'epub:type': 'toc'},
+          h('h1', 'Table of Contents'),
+          h('ol',
+            book.headings.map(function ol(d) {
+              return d.level > book.tocDepth ? [] :
+                h('li', d.empty ? [] : h('a', {href: `${d.chapter}.xhtml#${d.id}`}, d.title), d.subheadings.length ? h('ol', d.subheadings.map(ol)) : [])
+            }))))),
+    {name: 'book/text/_nav.xhtml'})
 
   archive.append(
     xhtml({'xmlns:epub': NS_EPUB},
