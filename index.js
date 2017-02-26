@@ -20,6 +20,9 @@ const XML_DECLARATION = '<?xml version="1.0" encoding="UTF-8"?>'
 const XHTML_DOCTYPE = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">'
 const NCX_DOCTYPE = '<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">'
 
+exports.normalizeManifest = require('./normalize')
+exports.loadBook = require('./load')
+
 exports.generate = (input, output) => {
   const stdin = input === '-'
   const root = stdin ? process.cwd() : path.dirname(input)
@@ -47,10 +50,6 @@ exports.getOutputName = m => slug(m.title)+'.epub'
 exports.ensureUUID = (manifest, input, indent = 2) =>
   manifest.uuid ? Promise.resolve(manifest) :
   fs.writeFile(input, JSON.stringify(Object.assign(manifest, {uuid: uuid.v4()}), null, indent)).then(() => manifest)
-
-exports.normalizeManifest = require('./normalize')
-
-exports.loadBook = require('./load')
 
 exports.createArchive = ({book, root, indent}) => {
   const archive = archiver.create('zip')
