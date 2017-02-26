@@ -26,3 +26,6 @@ hr {
   border: 0;
   margin: 2em auto;
 }
+[hidden] {
+  display: none;
+}
