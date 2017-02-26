@@ -230,12 +230,12 @@ exports.createArchive = ({book, root, indent}) => {
 
   book.xhtmls.forEach(function(content, i) {
     archive.append(
-      xhtml(
+      xhtml({'xmlns:epub': NS_EPUB},
         h('head',
           h('title', `Chapter ${i+1}`),
           h('link', {rel: 'stylesheet', href: '../style.css'}),
           book.cssURLs.map(href => h('link', {rel: 'stylesheet', href}))),
-        h('body', h.raw(content))),
+        h('body', {'epub:type': 'bodymatter'}, h.raw(content))),
       {name: `book/text/${i}.xhtml`})
   })
 
