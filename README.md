@@ -76,7 +76,7 @@ Takes no options. Runs an interactive wizard for creating a new `book.json` mani
 #### <code>ebrew [make\] [<em>options</em>\] [output=<em>title</em>.epub]</code>
 Generates an EPUB file from the given manifest.
 
-**--input, -i** — Path to the book manifest. Pass - for standard input. Default `./book.json`.
+**--input, -i** — Path to the book manifest. Pass `-` for standard input. Default `./book.json`.
 
 ## The manifest format
 
