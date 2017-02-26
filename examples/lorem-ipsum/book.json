@@ -3,6 +3,7 @@
   "author": "Nathan",
   "date": "2015-06-05",
   "rights": "Public Domain",
+  "cover": "book/images/cover.png",
   "contents": [
     "book/lorem.md",
     "book/ipsum.md"
