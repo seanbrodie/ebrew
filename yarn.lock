@@ -115,12 +115,6 @@ cheerio@^0.22.0:
     lodash.reject "^4.4.0"
     lodash.some "^4.4.0"
 
-cli-prompt@^0.6.0:
-  version "0.6.0"
-  resolved "https://registry.yarnpkg.com/cli-prompt/-/cli-prompt-0.6.0.tgz#366699dea9c818be6e0e834c33b02d14d8c3696f"
-  dependencies:
-    keypress "~0.2.1"
-
 cliui@^3.2.0:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/cliui/-/cliui-3.2.0.tgz#120601537a916d29940f934da3b48d585a39213d"
@@ -309,10 +303,6 @@ is-utf8@^0.2.0:
 isarray@~1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/isarray/-/isarray-1.0.0.tgz#bb935d48582cba168c06834957a54a3e07124f11"
-
-keypress@~0.2.1:
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/keypress/-/keypress-0.2.1.tgz#1e80454250018dbad4c3fe94497d6e67b6269c77"
 
 lazystream@^1.0.0:
   version "1.0.0"
