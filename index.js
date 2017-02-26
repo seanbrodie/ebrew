@@ -147,7 +147,7 @@ exports.createArchive = ({book, root, indent}) => {
   archive.append(
     xml('package', {xmlns: 'http://www.idpf.org/2007/opf', 'unique-identifier': 'uuid', version: '2.0'},
       h('metadata', {'xmlns:dc': 'http://purl.org/dc/elements/1.1/', 'xmlns:opf': 'http://www.idpf.org/2007/opf'},
-        h('dc:title', book.sortTitle && book.sortTitle !== book.title ? {'opf:file-as': book.sortTitle} : [], book.fullTitle),
+        h('dc:title', book.sortTitle && book.sortTitle !== book.title ? {'opf:file-as': book.sortTitle} : {}, book.fullTitle),
         h('dc:language', book.language),
         h('dc:rights', book.rights),
         h('dc:date', {'opf:event': 'creation'}, format.date(book.created)),
