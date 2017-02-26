@@ -90,6 +90,6 @@ Generates an EPUB file from the given manifest.
 | `"publisher"` | The book's publisher. Default: `""`, i.e., no publisher. |
 | `"rights"` | A statement about rights. Default: <code>"Copyright ©<em>year</em> <em>authors</em>"</code>. |
 | `"date"` | The date of publication of the book. Default: today. |
-| `"created"` | The date on which the book was created. Default: today. |
-| `"copyrighted"` | The copyright date of the book. Default: today. |
+| `"created"` | The date on which the book was created. Default: same as `date`. |
+| `"copyrighted"` | The copyright date of the book. Default: same as `date`. |
 | `"tocDepth"` | The maximum nesting level of the generated table of contents. Default: `6`, i.e., no limit. |
