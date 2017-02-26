@@ -10,6 +10,7 @@ const getStdin = require('get-stdin')
 
 exports.normalizeManifest = require('./normalize')
 exports.loadBook = require('./load')
+exports.createArchive = require('./create')
 
 exports.generate = (input, output) => {
   const stdin = input === '-'
@@ -38,5 +39,3 @@ exports.getOutputName = m => slug(m.title)+'.epub'
 exports.ensureUUID = (manifest, input, indent = 2) =>
   manifest.uuid ? Promise.resolve(manifest) :
   fs.writeFile(input, JSON.stringify(Object.assign(manifest, {uuid: uuid.v4()}), null, indent)).then(() => manifest)
-
-exports.createArchive = require('./create')
