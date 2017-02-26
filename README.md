@@ -79,6 +79,7 @@ Generates an EPUB file from the given manifest.
 | key | description |
 |----:|:------------|
 | `"uuid"` | A universally unique identifier for the book. Required. |
+| `"isbn"` | An ISBN for the book. Optional. |
 | `"contents"` | A filename or list of filenames corresponding to sections in the book. Required. |
 | `"css"` | A filename or list of filenames corresponding to stylesheets for the book. Default `[]`. |
 | `"title"` | The book's title. Default: `"Untitled"`. |
