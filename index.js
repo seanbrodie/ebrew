@@ -57,22 +57,21 @@ exports.ensureUUID = (manifest, input, indent = 2) =>
   fs.writeFile(input, JSON.stringify(Object.assign(manifest, {uuid: uuid.v4()}), null, indent)).then(() => manifest)
 
 exports.normalizeManifest = m => {
-  const title = m.title || 'Untitled'
-  const subtitle = m.subtitle || ''
-  const fullTitle = title + (subtitle ? ': ' + subtitle : '')
-  const language = m.language || 'en'
-  const contents = strarray(m.contents, 'm key "contents" must be a filename or an array of filenames.')
-  const css = strarray(m.css, 'm key "css" must be a string or array of strings', true)
-  const authors = strarray(m.authors || m.author, 'm key "author" or "authors" must be a string or an array of strings', true) || null
-  const publisher = m.publisher || ''
-  const tocDepth = m.tocDepth || 6
+  m.title = m.title || 'Untitled'
+  m.subtitle = m.subtitle || ''
+  m.fullTitle = m.title + (m.subtitle ? ': ' + m.subtitle : '')
+  m.language = m.language || 'en'
+  m.contents = strarray(m.contents, 'm key "contents" must be a filename or an array of filenames.')
+  m.css = strarray(m.css, 'm key "css" must be a string or array of strings', true)
+  m.authors = strarray(m.authors || m.author, 'm key "author" or "authors" must be a string or an array of strings', true) || null
+  m.publisher = m.publisher || ''
+  m.tocDepth = m.tocDepth || 6
 
-  const date = m.date ? new Date(m.date) : new Date
-  const created = m.created ? new Date(m.created) : date
-  const copyrighted = m.copyrighted ? new Date(m.copyrighted) : date
-  const rights = m.rights || (authors ? `Copyright ©${copyrighted.getFullYear()} ${format.list(authors)}` : null)
-
-  return Object.assign(m, {title, subtitle, fullTitle, language, contents, css, authors, publisher, tocDepth, date, created, copyrighted, rights})
+  m.date = m.date ? new Date(m.date) : new Date
+  m.created = m.created ? new Date(m.created) : m.date
+  m.copyrighted = m.copyrighted ? new Date(m.copyrighted) : m.date
+  m.rights = m.rights || (m.authors ? `Copyright ©${m.copyrighted.getFullYear()} ${format.list(m.authors)}` : null)
+  return m
 }
 
 exports.loadBook = (manifest, root) => {
