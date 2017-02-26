@@ -3,7 +3,7 @@
   "version": "0.2.1",
   "description": "Create EPUB documents with Markdown and JSON.",
   "repository": "https://github.com/nathan/ebrew",
-  "main": "lib/index.js",
+  "main": "index.js",
   "scripts": {},
   "preferGlobal": true,
   "bin": "lib/cli.js",
