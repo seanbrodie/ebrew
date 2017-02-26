@@ -153,7 +153,7 @@ exports.createArchive = ({book, root, indent}) => {
         h('dc:date', {'opf:event': 'publication'}, format.date(book.date)),
         h('dc:publisher', book.publisher),
         h('dc:type', 'Text'),
-        h('dc:identifier', {id: 'uuid', 'opf:scheme': 'UUID'}, book.uuid),
+        h('dc:identifier', {id: 'uuid', 'opf:scheme': 'uuid'}, book.uuid),
         book.authors.map(author =>
           h('dc:creator', {'opf:role': 'aut'}, author))),
       h('manifest',
