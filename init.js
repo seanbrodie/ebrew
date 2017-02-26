@@ -4,7 +4,7 @@ const fs = require('mz/fs')
 const readline = require('readline')
 const path = require('path')
 const uuid = require('uuid')
-const ebrew = require('.')
+const format = require('./format')
 
 module.exports = (dir = process.cwd()) => {
   const rl = readline.createInterface({
@@ -43,7 +43,7 @@ module.exports = (dir = process.cwd()) => {
         manifest.authors = items
       }
     }
-    return ask({key: 'date', default: ebrew.formatDate(new Date)})
+    return ask({key: 'date', default: format.date(new Date)})
   })
   .then(() => ask({key: 'publisher'}))
   .then(() => ask({

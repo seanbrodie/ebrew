@@ -13,6 +13,7 @@ const cheerio = require('cheerio')
 const mime = require('mime')
 const getStdin = require('get-stdin')
 const h = require('./h')
+const format = require('./format')
 
 const NS_XHTML = 'http://www.w3.org/1999/xhtml'
 const NS_EPUB = 'http://www.idpf.org/2007/ops'
@@ -69,7 +70,7 @@ exports.normalizeManifest = m => {
   const date = m.date ? new Date(m.date) : new Date
   const created = m.created ? new Date(m.created) : date
   const copyrighted = m.copyrighted ? new Date(m.copyrighted) : date
-  const rights = m.rights || (authors ? `Copyright ©${copyrighted.getFullYear()} ${formatList(authors)}` : null)
+  const rights = m.rights || (authors ? `Copyright ©${copyrighted.getFullYear()} ${format.list(authors)}` : null)
 
   return Object.assign(m, {title, subtitle, fullTitle, language, contents, css, authors, publisher, tocDepth, date, created, copyrighted, rights})
 }
@@ -147,9 +148,9 @@ exports.createArchive = ({book, root, indent}) => {
         h('dc:title', book.fullTitle),
         h('dc:language', book.language),
         h('dc:rights', book.rights),
-        h('dc:date', {'opf:event': 'creation'}, formatDate(book.created)),
-        h('dc:date', {'opf:event': 'copyright'}, formatDate(book.copyrighted)),
-        h('dc:date', {'opf:event': 'publication'}, formatDate(book.date)),
+        h('dc:date', {'opf:event': 'creation'}, format.date(book.created)),
+        h('dc:date', {'opf:event': 'copyright'}, format.date(book.copyrighted)),
+        h('dc:date', {'opf:event': 'publication'}, format.date(book.date)),
         h('dc:publisher', book.publisher),
         h('dc:type', 'Text'),
         h('dc:identifier', {id: 'uuid', 'opf:scheme': 'UUID'}, book.uuid),
@@ -201,7 +202,7 @@ exports.createArchive = ({book, root, indent}) => {
             h('span', {'epub:type': 'title'}, book.title),
             book.subtitle ? ':' : ''),
           book.subtitle ? [h('h2', {'epub:type': 'subtitle'}, book.subtitle)] : [],
-          book.authors.length ? [h('p', {class: 'author'}, formatList(book.authors))] : []))),
+          book.authors.length ? [h('p', {class: 'author'}, format.list(book.authors))] : []))),
     {name: 'OEBPS/text/_title.xhtml'})
 
   book.xhtmls.forEach(function(content, i) {
@@ -259,25 +260,6 @@ function strarray(data, message, optional) {
   if (typeof data === 'string') data = [data]
   if (!Array.isArray(data)) throw new Error(message)
   return data
-}
-
-function formatList(items) {
-  switch (items.length) {
-    case 0: return ''
-    case 1: return items[0]
-    case 2: return items[0]+' and '+items[1]
-    default: return items.slice(0, -1).join(', ')+', and '+items[items.length - 1]
-  }
-}
-exports.formatList = formatList
-
-function formatDate(date) {
-  return date.getUTCFullYear()+'-'+pad0(date.getUTCMonth() + 1)+'-'+pad0(date.getUTCDate())
-}
-exports.formatDate = formatDate
-
-function pad0(n) {
-  return n < 10 ? '0'+n : n
 }
 
 function xml(...a) {
