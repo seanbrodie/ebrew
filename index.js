@@ -174,6 +174,7 @@ exports.createArchive = ({book, root, indent}) => {
           h('item', {id: `res-${i}`, 'media-type': mime.lookup(res.href), href: res.href}))),
       h('spine', {toc: 'toc'},
         h('itemref', {idref: 'text-title'}),
+        book.toc === false ? [] : h('itemref', {idref: 'nav'}),
         book.texts.map((text, i) =>
           h('itemref', {idref: `text-${i}`})))),
     {name: 'book/content.opf'})

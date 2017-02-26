@@ -98,4 +98,5 @@ Generates an EPUB file from the given manifest.
 | `date` | The date of publication of the book. Default: today. |
 | `created` | The date on which the book was created. Default: same as `date`. |
 | `copyrighted` | The copyright date of the book. Default: same as `date`. |
+| `toc` | Specify `false` to omit the generated table of contents from the spine of the book. The table of contents will still be present as metadata, but will not appear in the book content. Default: `true`. |
 | `tocDepth` | The maximum nesting level of the generated table of contents. Default: `6`, i.e., no limit. |
