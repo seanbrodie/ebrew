@@ -86,6 +86,7 @@ Generates an EPUB file from the given manifest.
 | `isbn` | An ISBN for the book. Optional. |
 | `doi` | A DOI for the book. Optional. |
 | `contents` | A filename or list of filenames corresponding to sections in the book. Required. |
+| `cover` | The path to the cover image for the book. Optional. |
 | `css` | A filename or list of filenames corresponding to stylesheets for the book. Default `[]`. |
 | `title` | The book's title. Default: `"Untitled"`. |
 | `sortTitle` | The book's title. Default: generated from `title`. |
