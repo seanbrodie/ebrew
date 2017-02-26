@@ -68,11 +68,15 @@ The above tutorial should give you a pretty good idea of how to use EBREW; the f
 
 ## The `ebrew` command
 
+    > ebrew help
+
 #### `ebrew init`
 Takes no options. Runs an interactive wizard for creating a new `book.json` manifest.
 
-#### <code>ebrew [output=<em>title</em>.epub] [input=book.json]</code>
+#### <code>ebrew [make\] [<em>options</em>\] [output=<em>title</em>.epub]</code>
 Generates an EPUB file from the given manifest.
+
+**--input, -i** — Path to the book manifest. Pass - for standard input. Default `./book.json`.
 
 ## The manifest format
 
