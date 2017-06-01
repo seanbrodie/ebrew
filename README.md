@@ -92,6 +92,7 @@ Generates an EPUB file from the given manifest.
 | `title` | The book's title. Default: `"Untitled"`. |
 | `sortTitle` | The book's title. Default: generated from `title`. |
 | `subtitle` | The book's subtitle, usually displayed below or beside the title, separated from it by a colon. Default: `""`, i.e., no subtitle. |
+| `onlyTitle` | Specify `true` to omit the subtitle from the full title of the book, i.e., only include it on the title page and not in the metadata title. Default: `false`. |
 | `language` | An RFC 3066 language identifier indicating the primary language of the book's content. Default: `"en"`. |
 | `author`/`authors` | A string or list of strings indicating the authors of the book. Default: `""` or `[]`, i.e., no authors. |
 | `publisher` | The book's publisher. Default: `""`, i.e., no publisher. |
