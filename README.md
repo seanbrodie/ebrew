@@ -94,7 +94,7 @@ Generates an EPUB file from the given manifest.
 | `subtitle` | The book's subtitle, usually displayed below or beside the title, separated from it by a colon. Default: `""`, i.e., no subtitle. |
 | `onlyTitle` | Specify `true` to omit the subtitle from the full title of the book, i.e., only include it on the title page and not in the metadata title. Default: `false`. |
 | `language` | An RFC 3066 language identifier indicating the primary language of the book's content. Default: `"en"`. |
-| `author`/`authors` | A string or list of strings indicating the authors of the book. Default: `""` or `[]`, i.e., no authors. |
+| `author`/`authors` | A string, object, or list of strings and/or objects indicating the authors of the book. Valid object fields are `name` (required), `sort` (sort order name, default derived from `name`), and `role` (a [MARC relator](http://www.loc.gov/marc/relators/relacode.html) default `'aut'`). Default: `""` or `[]`, i.e., no authors. |
 | `publisher` | The book's publisher. Default: `""`, i.e., no publisher. |
 | `rights` | A statement about rights. Default: <code>"Copyright ©<em>year</em> <em>authors</em>"</code>. |
 | `date` | The date of publication of the book. Default: today. |
